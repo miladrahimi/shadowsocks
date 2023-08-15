@@ -35,4 +35,4 @@ RUN rm web.tar.gz
 
 EXPOSE 80
 
-ENTRYPOINT ["./shadowsocks", "start", "-c", "configs/config.json"]
+ENTRYPOINT ["./shadowsocks", "start"]
