@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shadowsocks</title>
+    <link rel="stylesheet" href="assets/third_party/bootstrap-5.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator_semanticui.min.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.ico">
+</head>
+<body>
+
+<div class="container py-5 text-center">
+    <div class="col">
+        <h1 class="text-dark">Shadowsocks</h1>
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link" href="admin-keys.html">Keys</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="#">Servers</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="admin-settings.html">Settings</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="sign-out">Sign out</a>
+            </li>
+        </ul>
+
+        <div id="table"></div>
+
+        <div class="mt-1 text-start">
+            <a href="#" class="btn btn-primary btn-sm d-block" id="create">+ New</a>
+        </div>
+    </div>
+</div>
+
+<script src="assets/third_party/jquery-3.6.3.min.js"></script>
+<script src="assets/third_party/bootstrap-5.3.1/js/bootstrap.min.js"></script>
+<script src="assets/third_party/tabulator-5.5.1/dist/js/tabulator.min.js"></script>
+<script src="assets/js/scripts.js"></script>
+<script>
+    let tooltip = function (e, cell) {
+        let el = document.createElement("div");
+        el.style.backgroundColor = "black";
+        el.style.padding = "10px";
+        el.style.borderRadius = "5px";
+        el.style.color = "white";
+        if (cell.getRow().getData().id === "s-0") {
+            el.innerText = "This is the current server. You can edit it in Settings tab.";
+        } else {
+            el.innerText = cell.getColumn().getField()
+            if (cell.getValue()) {
+                el.innerText += ": " + cell.getValue();
+            }
+        }
+        return el;
+    }
+
+    let editable = function (cell) {
+        return cell.getRow().getData().id !== "s-0"
+    }
+
+    let shadowsocksFormatter = function (cell) {
+        if (cell.getData().id === "{ID}" || cell.getData().shadowsocks_host === "") {
+            return `<span class="text-muted">{SHADOWSOCKS}</span>`
+        }
+        if (cell.getData()["shadowsocks_enabled"]) {
+            return `${cell.getData().shadowsocks_host}:${cell.getData().shadowsocks_port}`
+        } else {
+            return `<span class="text-danger">Disabled</span>`
+        }
+    }
+
+    let statusFormatter = function (cell) {
+        switch (cell.getValue()) {
+            case "active":
+                cell.getElement().style.color = "#198754"
+                return "Active"
+            case "processing":
+                cell.getElement().style.color = "#949494"
+                return "Processing..."
+            case "unauthorized":
+                cell.getElement().style.color = "#872919"
+                return "Unauthorized (Invalid Token)"
+            case "unavailable":
+                cell.getElement().style.color = "#872919"
+                return "Unavailable"
+            default:
+                cell.getElement().style.color = "#000000"
+                return cell.getValue()
+        }
+    }
+
+    let actionsFormatter = function (cell) {
+        if (cell.getData().id === "s-0") {
+            return ""
+        }
+        return `<span class="badge bg-danger" onclick="destroy('${cell.getRow().getIndex()}')">Delete</span>`;
+    }
+
+    let destroy = function (rowIndex) {
+        let row = table.getRow(rowIndex)
+
+        if (row.getData().id === "{ID}") {
+            table.deleteRow(rowIndex)
+            return
+        }
+
+        table.alert("Deleting the server...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            dataType: "json",
+            success: function () {
+                table.alert("Item deleted successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                let t = 2000
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot delete the item.", "error");
+                    t = 1000
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, t)
+            },
+            processData: true,
+            type: "DELETE",
+            url: `/v1/servers/${rowIndex}`
+        });
+    }
+
+    let table = new Tabulator("#table", {
+        ajaxURL: "/v1/servers",
+        ajaxConfig: {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            },
+        },
+        layout: "fitDataStretch",
+        initialSort: [{column: "id", dir: "desc"}],
+        validationMode: "blocking",
+        columnDefaults: {
+            tooltip: tooltip,
+        },
+        rowFormatter: function (row) {
+            if (row.getData().id === "s-0") {
+                row.getElement().style.backgroundColor = "#f6f6f6"
+                row.getElement().style.color = "#949494"
+            }
+        },
+        columns: [
+            {
+                title: "ID", field: "id", widthGrow: 1, resizable: true, headerFilter: "input", editable: editable,
+            },
+            {
+                title: "HTTP Host",
+                field: "http_host",
+                editor: "input",
+                widthGrow: 2,
+                headerFilter: "input",
+                validator: ["required"],
+                editable: editable,
+            },
+            {
+                title: "HTTP Port",
+                field: "http_port",
+                visible: true,
+                editor: "number",
+                widthGrow: 1,
+                validator: ["required", "min:1", "max:65536"],
+                editable: editable
+            },
+            {
+                title: "API Token",
+                field: "api_token",
+                resizable: true,
+                editor: "input",
+                widthGrow: 3,
+                validator: ["required"],
+                editable: editable
+            },
+            {
+                title: "Status", field: "status", widthGrow: 1, resizable: true, formatter: statusFormatter,
+            },
+            {
+                title: "Shadowsocks",
+                field: "shadowsocks",
+                widthGrow: 2,
+                formatter: shadowsocksFormatter,
+            },
+            {
+                title: "Used (MB)",
+                field: "used",
+                resizable: true,
+                sorter: "number",
+                formatter: "progress",
+                formatterParams: function (cell) {
+                    let max = 0;
+                    table.getRows().forEach(function (r) {
+                        if (r.getData().used > max) {
+                            max = r.getData().used
+                        }
+                    })
+
+                    return {
+                        min: 0,
+                        max: max,
+                        color: ["#3fb449"],
+                        legend: true,
+                        legendColor: "#000000",
+                        legendAlign: "center",
+                    }
+                }
+            },
+            {
+                title: "Actions", formatter: actionsFormatter, hozAlign: "right",
+            },
+        ],
+    });
+
+    table.on("cellEdited", function (cell) {
+        if (!cell.getData()["http_host"] || !cell.getData()["http_port"] || !cell.getData()["api_token"]) {
+            return
+        }
+
+        table.alert("Saving the server...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            data: JSON.stringify(cell.getData()),
+            dataType: "json",
+            success: function () {
+                table.alert("Item saved successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                let t = 2000
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot save the item.", "error");
+                    t = 1000
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, t)
+            },
+            processData: true,
+            type: cell.getData().id === "{ID}" ? "POST" : "PUT",
+            url: "/v1/servers"
+        });
+    });
+
+    $("#create").click(function () {
+        table.addRow({
+            id: "{ID}",
+            enabled: true,
+            status: "{STATUS}",
+            api_token: "",
+            http_host: "",
+            http_port: 80,
+            shadowsocks_host: "{HOST}",
+            shadowsocks_port: "{PORT}",
+            total: "{USED}",
+            synced_at: (new Date()).getTime() / 1000,
+        })
+    })
+</script>
+
+</body>
+</html>

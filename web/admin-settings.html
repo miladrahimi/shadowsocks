@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shadowsocks</title>
+    <link rel="stylesheet" href="assets/third_party/bootstrap-5.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator_semanticui.min.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.ico">
+</head>
+<body>
+
+<div class="container py-5 text-center">
+    <div class="col">
+        <h1 class="text-dark">Shadowsocks</h1>
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link" href="admin-keys.html">Keys</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="admin-servers.html">Servers</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="#">Settings</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="sign-out">Sign out</a>
+            </li>
+        </ul>
+
+        <div id="table"></div>
+    </div>
+</div>
+
+<script src="assets/third_party/jquery-3.6.3.min.js"></script>
+<script src="assets/third_party/bootstrap-5.3.1/js/bootstrap.min.js"></script>
+<script src="assets/third_party/tabulator-5.5.1/dist/js/tabulator.min.js"></script>
+<script src="assets/js/scripts.js"></script>
+<script>
+    let tooltip = function (e, cell) {
+        let el = document.createElement("div");
+        el.style.backgroundColor = "black";
+        el.style.padding = "10px";
+        el.style.borderRadius = "5px";
+        el.style.color = "white";
+        switch (cell.getRow().getCells()[0].getValue()) {
+            case "HTTP Port":
+                el.innerText = "HTTP port for current panel and APIs. Configurable using config file.";
+                break;
+            case "External HTTP":
+                el.innerText = "HTTP URL (without SSL) for generating subscription links.";
+                break;
+            case "External HTTPS":
+                el.innerText = "HTTPS URL (with SSL) for generating SSCONF links.";
+                break;
+            case "Admin Password":
+                el.innerText = "Password of current panel.";
+                break;
+            case "API Token":
+                el.innerText = "API token for master server or APIs.";
+                break;
+            case "Traffic Ratio":
+                el.innerText = "Coefficient for displaying the consumed traffic to users!";
+                break;
+            case "Shadowsocks Enabled":
+                el.innerText = "If true, shadowsocks server would be turned on.";
+                break;
+            case "Shadowsocks Host":
+                el.innerText = "Shadowsocks host that shadowsocks server listens to.";
+                break;
+            case "Shadowsocks Port":
+                el.innerText = "Shadowsocks port that shadowsocks server listens to.";
+                break;
+        }
+        return el;
+    }
+
+    let editable = function (cell) {
+        return !["HTTP Port"].includes(cell.getRow().getData().key)
+    }
+
+    let table = new Tabulator("#table", {
+        layout: "fitDataStretch",
+        validationMode: "blocking",
+        headerVisible: false,
+        rowFormatter: function (row) {
+            row.getElement().firstElementChild.style.background = "#f6f6f6"
+            if (["HTTP Port"].includes(row.getData().key)) {
+                row.getElement().style.color = "#949494"
+            }
+        },
+        columnDefaults: {
+            tooltip: tooltip,
+        },
+        columns: [
+            {
+                title: "Key", field: "key", widthGrow: 1, resizable: true,
+            },
+            {
+                title: "Value", field: "value", widthGrow: 3, resizable: true, editor: "input", editable: editable
+            },
+        ],
+    });
+
+    table.on("cellEdited", function () {
+        let map = {
+            "HTTP Port": "http_port",
+            "External HTTP": "external_http",
+            "External HTTPS": "external_https",
+            "Admin Password": "admin_password",
+            "API Token": "api_token",
+            "Traffic Ratio": "traffic_ratio",
+            "Shadowsocks Enabled": "shadowsocks_enabled",
+            "Shadowsocks Host": "shadowsocks_host",
+            "Shadowsocks Port": "shadowsocks_port",
+        }
+
+        let body = {}
+        table.getData().forEach(function (v) {
+            if (["Shadowsocks Port"].includes(v.key)) {
+                body[map[v.key]] = parseInt(v.value)
+            } else if (["Traffic Ratio"].includes(v.key)) {
+                body[map[v.key]] = parseFloat(v.value)
+            } else if (["Shadowsocks Enabled"].includes(v.key)) {
+                body[map[v.key]] = parseBool(v.value)
+            } else {
+                body[map[v.key]] = v.value
+            }
+        })
+
+        table.alert("Saving the setting...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            data: JSON.stringify(body),
+            dataType: "json",
+            success: function () {
+                table.alert("Settings saved successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                let t = 2000
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot save the settings.", "error");
+                    t = 1000
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, t)
+            },
+            processData: true,
+            type: "POST",
+            url: "/v1/settings"
+        });
+    });
+
+    function inject(response) {
+        table.setData([
+            {"key": "HTTP Port", "value": response["http_port"]},
+            {"key": "External HTTP", "value": response["external_http"]},
+            {"key": "External HTTPS", "value": response["external_https"]},
+            {"key": "Admin Password", "value": response["admin_password"]},
+            {"key": "API Token", "value": response["api_token"]},
+            {"key": "Traffic Ratio", "value": response["traffic_ratio"]},
+            {"key": "Shadowsocks Enabled", "value": response["shadowsocks_enabled"]},
+            {"key": "Shadowsocks Host", "value": response["shadowsocks_host"]},
+            {"key": "Shadowsocks Port", "value": response["shadowsocks_port"]},
+        ])
+    }
+
+    $.ajax({
+        dataType: "json",
+        success: function (response) {
+            inject(response)
+        },
+        error: function (response) {
+            console.log(response)
+            checkAuth(response)
+        },
+        processData: true,
+        type: "GET",
+        url: "/v1/settings"
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  shadowsocks:
+    build:
+      context: .
+    image: ghcr.io/getimages/shadowsocks:latest
+    restart: always
+    network_mode: host
+    user: root
+    volumes:
+      - ./configs:/app/configs
+      - ./storage/database:/app/storage/database
+      - ./storage/shadowsocks:/app/storage/shadowsocks
+      - ./storage/prometheus:/app/storage/prometheus
+  prometheus:
+    image: ghcr.io/internet24/prometheus:v2.40.7
+    restart: always
+    network_mode: host
+    user: root
+    command:
+      - '--web.enable-lifecycle'
+      - '--web.listen-address=127.0.0.1:9420'
+      - '--config.file=/prometheus/configs/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus/data'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./storage/prometheus/configs:/prometheus/configs
+      - ./storage/prometheus/data:/prometheus/data

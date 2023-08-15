@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shadowsocks</title>
+    <link rel="stylesheet" href="assets/third_party/bootstrap-5.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator_semanticui.min.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.ico">
+</head>
+<body>
+
+<div class="container py-5 text-center">
+    <div class="col">
+        <h1 class="text-dark">Shadowsocks</h1>
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="#">Keys</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="admin-servers.html">Servers</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="admin-settings.html">Settings</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="sign-out">Sign out</a>
+            </li>
+        </ul>
+
+        <div id="table"></div>
+
+        <div class="mt-1 text-start">
+            <a href="#" class="btn btn-primary btn-sm d-block" id="create">+ New</a>
+        </div>
+    </div>
+</div>
+
+<script src="assets/third_party/jquery-3.6.3.min.js"></script>
+<script src="assets/third_party/bootstrap-5.3.1/js/bootstrap.min.js"></script>
+<script src="assets/third_party/tabulator-5.5.1/dist/js/tabulator.min.js"></script>
+<script src="assets/js/scripts.js"></script>
+<script>
+    let tooltip = function (e, cell) {
+        let el = document.createElement("div");
+        el.style.backgroundColor = "black";
+        el.style.padding = "10px";
+        el.style.borderRadius = "5px";
+        el.style.color = "white";
+
+        el.innerText = cell.getColumn().getField()
+        if (cell.getValue()) {
+            el.innerText += ": " + cell.getValue();
+        }
+
+        switch (cell.getColumn().getField()) {
+            case "quota":
+                if (cell.getValue() === 0) {
+                    el.innerText = cell.getColumn().getField() + ": " + "unlimited"
+                } else {
+                    el.innerText += " (0 for unlimited)"
+                }
+                break
+        }
+
+        return el;
+    }
+
+    let destroy = function (rowIndex) {
+        table.alert("Deleting the key...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            dataType: "json",
+            success: function () {
+                table.alert("Item deleted successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                let t = 2000
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot delete the item.", "error");
+                    t = 1000
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, t)
+            },
+            processData: true,
+            type: "DELETE",
+            url: `/v1/keys/${rowIndex}`
+        });
+    }
+
+    let reset = function (rowIndex) {
+        table.alert("Resetting the key...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            dataType: "json",
+            success: function () {
+                table.alert("Item reset successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                let t = 2000
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot reset the item.", "error");
+                    t = 1000
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, t)
+            },
+            processData: true,
+            type: "PATCH",
+            url: `/v1/keys/${rowIndex}/reset`
+        });
+    }
+
+    let actionsFormatter = function (cell) {
+        return `<span class="badge bg-danger" onclick="destroy('${cell.getRow().getIndex()}')">Delete</span>&nbsp
+                <span class="badge bg-secondary" onclick="reset('${cell.getRow().getIndex()}')">Reset</span>&nbsp
+                <a href="${cell.getData().public}" class="badge bg-primary text-decoration-none">Public</a>`;
+    }
+
+    let table = new Tabulator("#table", {
+        ajaxURL: "/v1/keys",
+        ajaxConfig: {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            },
+        },
+        layout: "fitDataStretch",
+        initialSort: [{column: "id", dir: "desc"}],
+        validationMode: "blocking",
+        columnDefaults: {
+            tooltip: tooltip,
+            vertAlign: 'middle'
+        },
+        columns: [
+            {
+                title: "ID", field: "id", resizable: true, headerFilter: "input"
+            },
+            {
+                title: "Name", field: "name", resizable: true, headerFilter: "input", editor: "input",
+                validator: ["required", "minLength:1", "maxLength:32"],
+            },
+            {
+                title: "Secret", field: "secret", resizable: true, editor: "input",
+                validator: ["required", "unique", "minLength:5", "maxLength:64"],
+            },
+            {
+                title: "Cipher", field: "cipher", widthGrow: 2, resizable: true, editor: "list",
+                editorParams: {values: ["chacha20-ietf-poly1305", "aes-128-gcm", "aes-256-gcm"]},
+                validator: "in:chacha20-ietf-poly1305|aes-128-gcm|aes-256-gcm"
+            },
+            {
+                title: "Quota (MB)", field: "quota", resizable: true, editor: "number",
+                validator: ["required", "min:0", "max:1000000000"],
+            },
+            {
+                title: "Enabled", field: "enabled", resizable: true, editor: true, formatter: "tickCross"
+            },
+            {
+                title: "Used (MB)",
+                field: "used",
+                resizable: true,
+                sorter: "number",
+                formatter: "progress",
+                formatterParams: function (cell) {
+                    return {
+                        min: 0,
+                        max: cell.getData().quota || cell.getData().used,
+                        color: cell.getData().quota ? ["#3fb449", "#b4a43f", "#b4513f"] : ["#3fb449"],
+                        legend: true,
+                        legendColor: "#000000",
+                        legendAlign: "center",
+                    }
+                }
+            },
+            {
+                title: "Actions", field: "actions", formatter: actionsFormatter, hozAlign: "right",
+            },
+        ],
+    });
+
+    table.on("cellEdited", function (cell) {
+        if (!cell.getData().name || !cell.getData().secret || !cell.getData().cipher) {
+            return
+        }
+
+        table.alert("Saving the key...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            data: JSON.stringify(cell.getData()),
+            dataType: "json",
+            success: function () {
+                table.alert("Item saved successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot save the item.", "error");
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, 1000)
+            },
+            processData: true,
+            type: cell.getData().id === "{ID}" ? "POST" : "PUT",
+            url: "/v1/keys"
+        });
+    });
+
+    $("#create").click(function () {
+        table.addRow({
+            id: "{ID}",
+            name: "",
+            secret: btoa(Math.random().toString()).substring(5, 20),
+            server_host: "{HOST}",
+            shadowsocks_port: 1000,
+            cipher: "chacha20-ietf-poly1305",
+            quota: 0,
+            used: 0,
+            enabled: true,
+        })
+    })
+</script>
+
+</body>
+</html>
