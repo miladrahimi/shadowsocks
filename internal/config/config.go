@@ -33,16 +33,19 @@ type Config struct {
 }
 
 // New creates an instance of the Config.
-func New(path string) (*Config, error) {
-	content, err := os.ReadFile(path)
+func New() (*Config, error) {
+	content, err := os.ReadFile("configs/config.local.json")
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("cannot load %s, err: %v", path, err))
+		content, err = os.ReadFile("configs/config.json")
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("cannot load config files, err: %v", err))
+		}
 	}
 
 	var c Config
 	err = json.Unmarshal(content, &c)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("cannot validate %s, err: %v", path, err))
+		return nil, errors.New(fmt.Sprintf("cannot validate config file, err: %v", err))
 	}
 
 	return &c, err

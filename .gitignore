@@ -1,3 +1,4 @@
 .idea/
 gen/
 .DS_Store
+configs/config.local.json

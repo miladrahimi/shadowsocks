@@ -15,10 +15,6 @@ var rootCmd = &cobra.Command{
 func init() {
 	cobra.OnInitialize(func() { fmt.Println(config.AppName) })
 
-	rootCmd.PersistentFlags().StringVarP(
-		&configPath, "config", "c", "configs/config.json", "Config file path",
-	)
-
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(versionCmd)
 }

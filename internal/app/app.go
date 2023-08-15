@@ -39,10 +39,10 @@ type App struct {
 }
 
 // New creates an instance of the application.
-func New(configPath string) (app *App, err error) {
+func New() (app *App, err error) {
 	app = &App{}
 
-	if app.Config, err = config.New(configPath); err != nil {
+	if app.Config, err = config.New(); err != nil {
 		return app, err
 	}
 	if app.Logger, err = logger.New(app.Config); err != nil {
