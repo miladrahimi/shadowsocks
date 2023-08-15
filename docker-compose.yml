@@ -14,7 +14,7 @@ services:
       - ./storage/shadowsocks:/app/storage/shadowsocks
       - ./storage/prometheus:/app/storage/prometheus
   prometheus:
-    image: ghcr.io/internet24/prometheus:v2.40.7
+    image: ghcr.io/getimages/prometheus:v2.46.0
     restart: always
     network_mode: host
     user: root

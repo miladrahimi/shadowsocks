@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ## Build
-FROM ghcr.io/internet24/golang:1.20.1-bullseye AS build
+FROM ghcr.io/getimages/golang:1.21.0-bullseye AS build
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN tar -zcf third_party.tar.gz third_party
 RUN tar -zcf web.tar.gz web
 
 ## Deploy
-FROM ghcr.io/internet24/debian:bullseye-slim
+FROM ghcr.io/getimages/debian:bullseye-slim
 
 WORKDIR /app
 
