@@ -22,7 +22,7 @@ services:
       - '--config.file=/prometheus/configs/prometheus.yml'
       - '--storage.tsdb.path=/prometheus/data'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.time=60d'
       - '--web.console.templates=/usr/share/prometheus/consoles'
     volumes:
       - ./storage/prometheus/configs:/prometheus/configs
