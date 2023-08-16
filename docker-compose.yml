@@ -11,6 +11,7 @@ services:
       - ./storage/database:/app/storage/database
       - ./storage/shadowsocks:/app/storage/shadowsocks
       - ./storage/prometheus:/app/storage/prometheus
+      - ./web:/app/web
   prometheus:
     image: ghcr.io/getimages/prometheus:v2.46.0
     restart: always
