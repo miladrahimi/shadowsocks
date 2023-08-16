@@ -65,6 +65,30 @@
     </div>
 </div>
 
+<div class="modal fade" id="linkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">لینک جدید</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-danger" dir="rtl">
+                    <span>هشدار: لینک زیر را همین الان کپی کنید!</span>
+                    <br>
+                    <span>لینک قبلی حذف و تنها با لینک زیر می‌تواند اطلاعات پروکسی خود را ببینید.</span>
+                </p>
+                <p>
+                    <a href="#" id="new-link" class="small text-break"></a>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="assets/third_party/jquery-3.6.3.min.js"></script>
 <script src="assets/third_party/bootstrap-5.3.1/js/bootstrap.min.js"></script>
 <script src="assets/js/scripts.js"></script>
@@ -115,7 +139,8 @@
                 dataType: 'json',
                 success: function (response) {
                     console.log(response)
-                    window.location = response['public']
+                    $('#new-link').html(response['public']).attr('href', response['public']);
+                    (new bootstrap.Modal(document.getElementById('linkModal'))).show({})
                 },
                 error: function (response) {
                     console.log(response)
