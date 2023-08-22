@@ -114,6 +114,7 @@ func (a *App) Wait() {
 	<-a.Context.Done()
 }
 
+// Shutdown closes all open resources and processes gracefully.
 func (a *App) Shutdown() {
 	if a.Shadowsocks != nil {
 		a.Shadowsocks.Shutdown()

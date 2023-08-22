@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Shadowsocks</title>
+    <title>Shadowsocks Admin</title>
     <link rel="stylesheet" href="assets/third_party/bootstrap-5.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator.min.css">
     <link rel="stylesheet" href="assets/third_party/tabulator-5.5.1/dist/css/tabulator_semanticui.min.css">
@@ -101,8 +101,8 @@
         });
     }
 
-    let reset = function (rowIndex) {
-        table.alert("Resetting the key...", "msg");
+    let empty = function (rowIndex) {
+        table.alert("Emptying the key...", "msg");
 
         $.ajax({
             contentType: "application/json",
@@ -129,14 +129,14 @@
             },
             processData: true,
             type: "PATCH",
-            url: `/v1/keys/${rowIndex}/reset`
+            url: `/v1/keys/${rowIndex}/empty`
         });
     }
 
     let actionsFormatter = function (cell) {
         return `<span class="badge bg-danger" onclick="destroy('${cell.getRow().getIndex()}')">Delete</span>&nbsp
-                <span class="badge bg-secondary" onclick="reset('${cell.getRow().getIndex()}')">Reset</span>&nbsp
-                <a href="${cell.getData().public}" class="badge bg-primary text-decoration-none">Public</a>`;
+                <span class="badge bg-secondary" onclick="empty('${cell.getRow().getIndex()}')">Empty</span>&nbsp
+                <a href="/profile?c=${cell.getData().code}" class="badge bg-primary text-decoration-none">Profile</a>`;
     }
 
     let table = new Tabulator("#table", {

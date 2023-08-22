@@ -43,7 +43,7 @@ func (st *ServerTable) Load() error {
 	content, err := os.ReadFile(ServerPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			if !utils.DirectoryExist(filepath.Dir(SettingPath)) {
+			if !utils.DirectoryExist(filepath.Dir(ServerPath)) {
 				return errors.New(fmt.Sprintf("directory %s not found", filepath.Base(ServerPath)))
 			}
 			return st.Save()

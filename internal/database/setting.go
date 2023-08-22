@@ -19,7 +19,7 @@ type SettingTable struct {
 	ShadowsocksHost    string  `json:"shadowsocks_host" validate:"required,max=128"`
 	ShadowsocksPort    int     `json:"shadowsocks_port" validate:"required,min=1,max=65536"`
 	ExternalHttps      string  `json:"external_https"`
-	ExternalHttp       string  `json:"external_http" validate:"required"`
+	ExternalHttp       string  `json:"external_http"`
 	TrafficRatio       float64 `json:"traffic_ratio" validate:"required,min=1"`
 }
 

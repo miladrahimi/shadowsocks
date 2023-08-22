@@ -41,11 +41,12 @@ func (s *Server) Run() {
 	s.Engine.GET("/ssconf/*", handlers.SSConf(s.coordinator))
 	s.Engine.GET("/subscription/*", handlers.Subscription(s.coordinator))
 	s.Engine.GET("/public", handlers.Public(s.coordinator))
+	s.Engine.GET("/profile", handlers.Profile(s.coordinator))
 
 	g1 := s.Engine.Group("/v1")
 	g1.POST("/sign-in", v1.SignIn(s.coordinator))
-	g1.GET("/public/profile", v1.PublicProfile(s.coordinator))
-	g1.POST("/public/reset", v1.PublicReset(s.coordinator))
+	g1.GET("/profile", v1.ProfileShow(s.coordinator))
+	g1.POST("/profile/reset", v1.ProfileReset(s.coordinator))
 
 	g2 := s.Engine.Group("/v1")
 	g2.Use(internalMw.Authorize(s.coordinator.Database))
@@ -60,8 +61,8 @@ func (s *Server) Run() {
 	g2.POST("/keys", v1.KeysStore(s.coordinator))
 	g2.PUT("/keys", v1.KeysUpdate(s.coordinator))
 	g2.DELETE("/keys/:id", v1.KeysDelete(s.coordinator))
-	g2.PATCH("/keys/:id/reset", v1.KeysReset(s.coordinator))
-	g2.POST("/keys/refill", v1.KeysRefill(s.coordinator))
+	g2.PATCH("/keys/:id/empty", v1.KeysEmpty(s.coordinator))
+	g2.POST("/keys/fill", v1.KeysFill(s.coordinator))
 
 	address := fmt.Sprintf("%s:%d", s.config.HttpServer.Host, s.config.HttpServer.Port)
 	if err := s.Engine.Start(address); err != nil && err != http.ErrServerClosed {

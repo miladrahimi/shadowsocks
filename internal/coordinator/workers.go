@@ -3,31 +3,19 @@ package coordinator
 import "time"
 
 func (c *Coordinator) startWorkers() {
-	go c.run10SecondJobs()
-	go c.runMinuteJobs()
-	go c.start10SecondWorker()
-	go c.startMinuteWorker()
+	go c.runJobs()
+	go c.startWorker()
 }
 
-func (c *Coordinator) start10SecondWorker() {
-	ticker := time.NewTicker(10 * time.Second)
+func (c *Coordinator) startWorker() {
+	ticker := time.NewTicker(time.Duration(c.Config.Worker.Interval) * time.Second)
 	for range ticker.C {
-		c.run10SecondJobs()
+		go c.runJobs()
 	}
 }
 
-func (c *Coordinator) run10SecondJobs() {
+func (c *Coordinator) runJobs() {
 	go c.pullServers()
-}
-
-func (c *Coordinator) startMinuteWorker() {
-	ticker := time.NewTicker(time.Minute)
-	for range ticker.C {
-		go c.runMinuteJobs()
-	}
-}
-
-func (c *Coordinator) runMinuteJobs() {
 	go c.syncMetrics()
 	go c.pushServers()
 }

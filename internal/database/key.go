@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-playground/validator"
+	"github.com/labstack/gommon/random"
 	"github.com/miladrahimi/shadowsocks/pkg/utils"
 	"golang.org/x/exp/slices"
 	"os"
@@ -17,6 +18,7 @@ const KeyPath = "storage/database/keys.json"
 
 type Key struct {
 	Id      string `json:"id" validate:"required,hostname"`
+	Code    string `json:"code"`
 	Cipher  string `json:"cipher" validate:"required,oneof=chacha20-ietf-poly1305 aes-128-gcm aes-256-gcm"`
 	Secret  string `json:"secret" validate:"required,min=6,max=64"`
 	Name    string `json:"name" validate:"required,min=1,max=64"`
@@ -51,6 +53,18 @@ func (kt *KeyTable) Load() error {
 		return errors.New(fmt.Sprintf("cannot validate %s, err: %v", KeyPath, err))
 	}
 
+	// TODO: Remove this later...
+	isDirty := false
+	for _, k := range kt.Keys {
+		if k.Code == "" {
+			isDirty = true
+			k.Code = kt.GenerateCode()
+		}
+	}
+	if isDirty {
+		return kt.Save()
+	}
+
 	return nil
 }
 
@@ -81,6 +95,22 @@ func (kt *KeyTable) Save() (err error) {
 	return kt.Load()
 }
 
+func (kt *KeyTable) GenerateCode() string {
+	for {
+		code := random.String(32)
+		isUnique := true
+		for _, k := range kt.Keys {
+			if k.Code == code {
+				isUnique = false
+				break
+			}
+		}
+		if isUnique {
+			return code
+		}
+	}
+}
+
 func (kt *KeyTable) Store(key Key) (*Key, error) {
 	for _, k := range kt.Keys {
 		if k.Secret == key.Secret {
@@ -89,6 +119,7 @@ func (kt *KeyTable) Store(key Key) (*Key, error) {
 	}
 
 	key.Id = fmt.Sprintf("k-%d", kt.NextId)
+	key.Code = kt.GenerateCode()
 
 	kt.NextId++
 	kt.Keys = append(kt.Keys, &key)
@@ -117,7 +148,7 @@ func (kt *KeyTable) Update(key Key) (*Key, error) {
 	return nil, nil
 }
 
-func (kt *KeyTable) Refill(keys []Key) (err error) {
+func (kt *KeyTable) Fill(keys []Key) (err error) {
 	var nextId int64 = 1
 	for _, k := range keys {
 		if err = validator.New().Struct(k); err != nil {
@@ -142,7 +173,7 @@ func (kt *KeyTable) Refill(keys []Key) (err error) {
 	return kt.Save()
 }
 
-func (kt *KeyTable) ReId(id string) (*Key, error) {
+func (kt *KeyTable) RegenerateId(id string) (*Key, error) {
 	for i, k := range kt.Keys {
 		if k.Id == id {
 			kt.Keys[i].Id = fmt.Sprintf("k-%d", kt.NextId)
@@ -152,6 +183,15 @@ func (kt *KeyTable) ReId(id string) (*Key, error) {
 		}
 	}
 
+	return nil, nil
+}
+
+func (kt *KeyTable) FindByCode(code string) (*Key, error) {
+	for _, k := range kt.Keys {
+		if k.Code == code {
+			return k, nil
+		}
+	}
 	return nil, nil
 }
 

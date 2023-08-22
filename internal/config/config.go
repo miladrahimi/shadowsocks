@@ -30,6 +30,10 @@ type Config struct {
 		Level  string `json:"level"`
 		Format string `json:"format"`
 	} `json:"logger"`
+
+	Worker struct {
+		Interval int `json:"interval"`
+	} `json:"worker"`
 }
 
 // New creates an instance of the Config.

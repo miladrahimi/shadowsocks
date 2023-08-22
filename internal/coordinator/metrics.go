@@ -72,7 +72,7 @@ func (c *Coordinator) syncMetrics() {
 	c.ServerMetrics = sms
 	c.KeyMetrics = kms
 
-	go c.checkQuotas()
+	c.checkQuotas()
 }
 
 func (c *Coordinator) checkQuotas() {
@@ -95,6 +95,6 @@ func (c *Coordinator) checkQuotas() {
 	}
 
 	if dirty {
-		go c.Sync()
+		c.Sync()
 	}
 }

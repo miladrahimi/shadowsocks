@@ -1,11 +1,5 @@
 package database
 
-type DataError string
-
-func (de DataError) Error() string {
-	return string(de)
-}
-
 type Database struct {
 	SettingTable *SettingTable
 	KeyTable     *KeyTable
@@ -16,7 +10,7 @@ func New() (*Database, error) {
 	db := &Database{
 		SettingTable: &SettingTable{
 			AdminPassword:      "password",
-			ApiToken:           "api-token-123456",
+			ApiToken:           "api-token-secret",
 			ShadowsocksHost:    "127.0.0.1",
 			ShadowsocksPort:    1,
 			ShadowsocksEnabled: true,

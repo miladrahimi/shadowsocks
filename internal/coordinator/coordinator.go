@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"fmt"
+	"github.com/labstack/gommon/random"
 	"github.com/miladrahimi/shadowsocks/internal/config"
 	"github.com/miladrahimi/shadowsocks/internal/database"
 	"github.com/miladrahimi/shadowsocks/pkg/prometheus"
@@ -27,7 +28,7 @@ type Coordinator struct {
 func (c *Coordinator) Run() {
 	c.initSettings()
 	c.initMetricsPort()
-	c.syncKeys(false)
+	c.syncShadowsocks(false)
 	c.syncServers(false)
 	go c.Shadowsocks.Run(c.MetricsPort)
 	go c.Prometheus.Reload()
@@ -35,14 +36,13 @@ func (c *Coordinator) Run() {
 }
 
 func (c *Coordinator) Sync() {
-	c.syncKeys(true)
+	c.syncShadowsocks(true)
 	c.syncServers(true)
-
 }
 
 func (c *Coordinator) initSettings() {
-	if c.Database.SettingTable.ApiToken == "api-token-123456" {
-		c.Database.SettingTable.ApiToken = utils.Token()
+	if c.Database.SettingTable.ApiToken == "api-token-secret" {
+		c.Database.SettingTable.ApiToken = random.String(32)
 	}
 
 	if c.Database.SettingTable.ShadowsocksPort == 1 {
@@ -52,7 +52,7 @@ func (c *Coordinator) initSettings() {
 		}
 	}
 
-	if c.Database.SettingTable.ExternalHttp == "http://localhost" {
+	if c.Database.SettingTable.ExternalHttp == "http://empty" {
 		c.Database.SettingTable.ExternalHttp = fmt.Sprintf("http://127.0.0.1:%d", c.Config.HttpServer.Port)
 	}
 
@@ -68,8 +68,26 @@ func (c *Coordinator) initMetricsPort() {
 	}
 }
 
+func (c *Coordinator) CurrentServer() *database.Server {
+	return &database.Server{
+		Id:                 "s-0",
+		Status:             database.ServerStatusActive,
+		HttpHost:           "127.0.0.1",
+		HttpPort:           c.Config.HttpServer.Port,
+		ShadowsocksEnabled: c.Database.SettingTable.ShadowsocksEnabled,
+		ShadowsocksHost:    c.Database.SettingTable.ShadowsocksHost,
+		ShadowsocksPort:    c.Database.SettingTable.ShadowsocksPort,
+		ApiToken:           c.Database.SettingTable.ApiToken,
+		SyncedAt:           c.SyncedAt,
+	}
+}
+
 func New(
-	c *config.Config, l *zap.Logger, hc *http.Client, p *prometheus.Prometheus, db *database.Database,
+	c *config.Config,
+	l *zap.Logger,
+	hc *http.Client,
+	p *prometheus.Prometheus,
+	db *database.Database,
 	ss *shadowsocks.Shadowsocks,
 ) *Coordinator {
 	return &Coordinator{

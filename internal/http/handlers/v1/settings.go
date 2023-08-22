@@ -5,21 +5,18 @@ import (
 	"github.com/miladrahimi/shadowsocks/internal/config"
 	"github.com/miladrahimi/shadowsocks/internal/coordinator"
 	"github.com/miladrahimi/shadowsocks/internal/database"
-	"github.com/miladrahimi/shadowsocks/pkg/utils"
 	"net/http"
 )
 
 type SettingsResponse struct {
 	database.SettingTable
-	HttpHost string `json:"http_host"`
-	HttpPort int    `json:"http_port"`
+	HttpPort int `json:"http_port"`
 }
 
 func SettingsShow(cfg *config.Config, coordinator *coordinator.Coordinator) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return c.JSON(http.StatusOK, SettingsResponse{
 			SettingTable: *coordinator.Database.SettingTable,
-			HttpHost:     utils.IP(),
 			HttpPort:     cfg.HttpServer.Port,
 		})
 	}

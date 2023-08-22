@@ -13,15 +13,17 @@ import (
 )
 
 func (c *Coordinator) syncServers(reconfigure bool) {
-	c.Logger.Debug("syncing servers with the prometheus service")
+	c.Logger.Debug("syncing server list in the prometheus service")
 
-	servers := map[string]string{c.CurrentServer().Id: fmt.Sprintf("127.0.0.1:%d", c.CurrentServer().HttpPort)}
+	servers := map[string]string{
+		c.CurrentServer().Id: fmt.Sprintf("%s:%d", c.CurrentServer().HttpHost, c.CurrentServer().HttpPort),
+	}
 	for _, s := range c.Database.ServerTable.Servers {
 		servers[s.Id] = fmt.Sprintf("%s:%d", s.HttpHost, s.HttpPort)
 	}
 
 	if err := c.Prometheus.Update(servers); err != nil {
-		c.Logger.Fatal("cannot set servers in the prometheus service", zap.Error(err))
+		c.Logger.Fatal("cannot save server list in the prometheus service", zap.Error(err))
 	}
 
 	if reconfigure {
@@ -29,20 +31,6 @@ func (c *Coordinator) syncServers(reconfigure bool) {
 	}
 
 	go c.pushServers()
-}
-
-func (c *Coordinator) CurrentServer() *database.Server {
-	return &database.Server{
-		Id:                 "s-0",
-		Status:             database.ServerStatusActive,
-		HttpHost:           "127.0.0.1",
-		HttpPort:           c.Config.HttpServer.Port,
-		ShadowsocksEnabled: c.Database.SettingTable.ShadowsocksEnabled,
-		ShadowsocksHost:    c.Database.SettingTable.ShadowsocksHost,
-		ShadowsocksPort:    c.Database.SettingTable.ShadowsocksPort,
-		ApiToken:           c.Database.SettingTable.ApiToken,
-		SyncedAt:           c.SyncedAt,
-	}
 }
 
 func (c *Coordinator) updateServerStatus(s *database.Server, newStatus string) {
@@ -54,7 +42,7 @@ func (c *Coordinator) updateServerStatus(s *database.Server, newStatus string) {
 
 func (c *Coordinator) pullServers() {
 	for _, s := range c.Database.ServerTable.Servers {
-		go c.pullServer(s)
+		c.pullServer(s)
 	}
 }
 
@@ -119,12 +107,14 @@ func (c *Coordinator) pullServer(s *database.Server) {
 
 func (c *Coordinator) pushServers() {
 	for _, s := range c.Database.ServerTable.Servers {
-		go c.pushServer(s)
+		if s.SyncedAt < c.Database.KeyTable.UpdatedAt {
+			go c.pushServer(s)
+		}
 	}
 }
 
 func (c *Coordinator) pushServer(s *database.Server) {
-	url := fmt.Sprintf("http://%s:%d/v1/keys/refill", s.HttpHost, s.HttpPort)
+	url := fmt.Sprintf("http://%s:%d/v1/keys/fill", s.HttpHost, s.HttpPort)
 	c.Logger.Debug("pushing keys to server...", zap.String("url", url))
 
 	body, err := json.Marshal(c.Database.KeyTable.Keys)

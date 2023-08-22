@@ -1,4 +1,4 @@
-.PHONY: install run build
+.PHONY: install run build reset fresh
 
 install:
 	./third_party/outline-ss-server.sh
@@ -9,7 +9,7 @@ run: install
 build: install
 	go build main.go -o shadowsocks
 
-reset:
+empty:
 	find storage/prometheus/data -not -name '.gitignore' -delete
 	docker compose restart
 
