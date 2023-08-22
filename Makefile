@@ -10,12 +10,12 @@ build: install
 	go build main.go -o shadowsocks
 
 empty:
-	find storage/prometheus/data -not -name '.gitignore' -delete
+	find storage/prometheus/data -mindepth 1 -not -name '.gitignore' -exec rm -rf {} \;
 	docker compose restart
 
 fresh:
-	find storage/database -not -name '.gitignore' -delete
-	find storage/prometheus/configs -not -name '.gitignore' -delete
-	find storage/prometheus/data -not -name '.gitignore' -delete
-	find storage/shadowsocks -not -name '.gitignore' -delete
+	find storage/database -mindepth 1 -not -name '.gitignore' -exec rm -rf {} \;
+	find storage/prometheus/configs -mindepth 1 -not -name '.gitignore' -exec rm -rf {} \;
+	find storage/prometheus/data -mindepth 1 -not -name '.gitignore' -exec rm -rf {} \;
+	find storage/shadowsocks -mindepth 1 -not -name '.gitignore' -exec rm -rf {} \;
 	docker compose restart
