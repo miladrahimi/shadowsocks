@@ -11,7 +11,7 @@ build: install
 
 empty:
 	find storage/prometheus/data -mindepth 1 -not -name '.gitignore' -exec rm -rf {} \;
-	sed -i 's/"enabled":false/"enabled":true/g' storage/database/keys.json
+	sed -i 's/"enabled":false/"enabled":true/g' storage/database/keys.json;
 	docker compose restart
 
 fresh:
