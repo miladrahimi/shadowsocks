@@ -136,7 +136,7 @@
     let actionsFormatter = function (cell) {
         return `<span class="badge bg-danger" onclick="destroy('${cell.getRow().getIndex()}')">Delete</span>&nbsp
                 <span class="badge bg-secondary" onclick="empty('${cell.getRow().getIndex()}')">Empty</span>&nbsp
-                <a href="/profile?c=${cell.getData().code}" class="badge bg-primary text-decoration-none">Profile</a>`;
+                <a href="${cell.getData().link}" class="badge bg-primary text-decoration-none">Profile</a>`;
     }
 
     let table = new Tabulator("#table", {

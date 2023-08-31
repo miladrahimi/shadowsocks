@@ -12,7 +12,7 @@ import (
 )
 
 type ProfileResponse struct {
-	KeyResponse
+	database.Key
 	coordinator.KeyMetric
 	SSCONF       string   `json:"ssconf"`
 	Subscription string   `json:"subscription"`
@@ -34,7 +34,7 @@ func ProfileShow(cdr *coordinator.Coordinator) echo.HandlerFunc {
 		}
 
 		var r ProfileResponse
-		r.KeyResponse.Key = key
+		r.Key = *key
 		r.Quota = int64(float64(r.Quota) * cdr.Database.SettingTable.TrafficRatio)
 
 		auth := base64.StdEncoding.EncodeToString([]byte(r.Cipher + ":" + r.Secret))

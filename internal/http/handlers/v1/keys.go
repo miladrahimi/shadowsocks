@@ -22,7 +22,8 @@ type KeysUpdateRequest struct {
 
 type KeyResponse struct {
 	*database.Key
-	Used int64 `json:"used"`
+	Used int64  `json:"used"`
+	Link string `json:"link"`
 }
 
 func KeysIndex(coordinator *coordinator.Coordinator) echo.HandlerFunc {
@@ -30,6 +31,7 @@ func KeysIndex(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 		krs := make([]KeyResponse, 0, len(coordinator.Database.KeyTable.Keys))
 		for _, k := range coordinator.Database.KeyTable.Keys {
 			kr := &KeyResponse{Key: k}
+			kr.Link = coordinator.Database.SettingTable.ExternalHttp + "/profile?c=" + k.Code
 			if m, found := coordinator.KeyMetrics[k.Id]; found {
 				kr.Used = m.Total / 1000000
 			}
