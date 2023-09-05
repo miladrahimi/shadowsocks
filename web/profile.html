@@ -42,6 +42,10 @@
                         <td class="text-muted">Upload UDP:</td>
                         <td class="text-muted text-end"><span id="up_udp">0</span> MB</td>
                     </tr>
+                    <tr>
+                        <td class="text-muted">Created At:</td>
+                        <td class="text-muted text-end"><span id="created_at">-</span></td>
+                    </tr>
                 </table>
                 <div class="mt-2 text-start">
                     <div class="mt-3" id="ssconf-wrapper">
@@ -70,6 +74,13 @@
 <script src="assets/js/scripts.js"></script>
 <script>
     jQuery(function () {
+        let ts2string = function (timestamp) {
+            let d = (new Date(timestamp)).toLocaleDateString('fa-IR')
+            return d.replace(/[\u0660-\u0669\u06f0-\u06f9]/g, function (c) {
+                return c.charCodeAt(0) & 0xf;
+            });
+        }
+
         $.ajax({
             type: "GET",
             url: `/v1/profile${window.location.search}`,
@@ -83,6 +94,7 @@
                 $("#up_udp").html(r['up_udp'])
                 $("#down_tcp").html(r['down_tcp'])
                 $("#down_udp").html(r['down_udp'])
+                $("#created_at").html(ts2string(r['created_at']))
                 let percent = Math.floor(r['total'] / r['quota'] * 100)
                 $("#progressbar").css("width", String(percent) + "%").html(String(percent) + "%")
 
@@ -135,7 +147,6 @@
                 }
             })
         })
-
     })
 </script>
 

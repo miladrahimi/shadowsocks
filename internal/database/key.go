@@ -17,13 +17,14 @@ import (
 const KeyPath = "storage/database/keys.json"
 
 type Key struct {
-	Id      string `json:"id" validate:"required,hostname"`
-	Code    string `json:"code"`
-	Cipher  string `json:"cipher" validate:"required,oneof=chacha20-ietf-poly1305 aes-128-gcm aes-256-gcm"`
-	Secret  string `json:"secret" validate:"required,min=6,max=64"`
-	Name    string `json:"name" validate:"required,min=1,max=64"`
-	Quota   int64  `json:"quota" validate:"min=0"`
-	Enabled bool   `json:"enabled"`
+	Id        string `json:"id" validate:"required,hostname"`
+	Code      string `json:"code" validate:"required"`
+	Cipher    string `json:"cipher" validate:"required,oneof=chacha20-ietf-poly1305 aes-128-gcm aes-256-gcm"`
+	Secret    string `json:"secret" validate:"required,min=6,max=64"`
+	Name      string `json:"name" validate:"required,min=1,max=64"`
+	Quota     int64  `json:"quota" validate:"min=0"`
+	CreatedAt int64  `json:"created_at"`
+	Enabled   bool   `json:"enabled"`
 }
 
 type KeyTable struct {
@@ -56,9 +57,9 @@ func (kt *KeyTable) Load() error {
 	// TODO: Remove this later...
 	isDirty := false
 	for _, k := range kt.Keys {
-		if k.Code == "" {
+		if k.CreatedAt == 0 {
 			isDirty = true
-			k.Code = kt.GenerateCode()
+			k.CreatedAt = time.Now().UnixMilli()
 		}
 	}
 	if isDirty {
@@ -120,6 +121,7 @@ func (kt *KeyTable) Store(key Key) (*Key, error) {
 
 	key.Id = fmt.Sprintf("k-%d", kt.NextId)
 	key.Code = kt.GenerateCode()
+	key.CreatedAt = time.Now().UnixMilli()
 
 	kt.NextId++
 	kt.Keys = append(kt.Keys, &key)
