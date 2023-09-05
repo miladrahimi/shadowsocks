@@ -100,7 +100,7 @@
         if (cell.getData().id === "s-0") {
             return ""
         }
-        return `<span class="badge bg-danger" onclick="destroy('${cell.getRow().getIndex()}')">Delete</span>`;
+        return `<span class="badge bg-danger" onclick="destroy('${cell.getRow().getIndex()}')">X</span>`;
     }
 
     let destroy = function (rowIndex) {
