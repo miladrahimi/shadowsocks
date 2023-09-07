@@ -109,6 +109,7 @@ func (st *ServerTable) Update(server Server) (*Server, error) {
 			st.Servers[i].ShadowsocksPort = server.ShadowsocksPort
 			st.Servers[i].ApiToken = server.ApiToken
 			st.Servers[i].Status = server.Status
+			st.Servers[i].SyncedAt = 0
 			return st.Servers[i], st.Save()
 		}
 	}
